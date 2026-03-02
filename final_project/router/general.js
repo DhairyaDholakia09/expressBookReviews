@@ -32,9 +32,12 @@ public_users.post("/register", (req, res) => {
 });
 
 // Get the book list available in the shop
+public_users.get('/books', function (req, res) {
+    return res.status(200).json(books);
+});
 public_users.get('/', async function (req, res) {
     try {
-        const response = await axios.get('http://localhost:5000/');
+        const response = await axios.get('http://localhost:5000/books');
         return res.status(200).json(response.data);
     } catch (error) {
         return res.status(500).json({ message: "Error retrieving books" });
@@ -44,12 +47,18 @@ public_users.get('/', async function (req, res) {
 // Get book details based on ISBN
 public_users.get('/isbn/:isbn', function (req, res) {
     const isbn = req.params.isbn;
-    axios.get(`http://localhost:5000/isbn/${isbn}`)
+    axios.get('http://localhost:5000/books')
         .then(response => {
-            res.status(200).json(response.data);
+            const allBooks = response.data;
+
+            if (allBooks[isbn]) {
+                res.status(200).json(allBooks[isbn]);
+            } else {
+                res.status(404).json({ message: "Book not found" });
+            }
         })
-        .catch(error => {
-            res.status(404).json({ message: "Book not found" });
+        .catch(() => {
+            res.status(500).json({ message: "Error retrieving book" });
         });
 });
   
@@ -57,42 +66,41 @@ public_users.get('/isbn/:isbn', function (req, res) {
 public_users.get('/author/:author', async function (req, res) {
     const author = req.params.author.toLowerCase();
     try {
-        const response = await axios.get(`http://localhost:5000/`);
-        const books = response.data;
+        const response = await axios.get('http://localhost:5000/books');
+        const allBooks = response.data;
 
         let filteredBooks = {};
 
-        Object.keys(books).forEach(key => {
-            if (books[key].author.toLowerCase() === author.toLowerCase()) {
-                filteredBooks[key] = books[key];
+        Object.keys(allBooks).forEach(key => {
+            if (allBooks[key].author.toLowerCase() === author) {
+                filteredBooks[key] = allBooks[key];
             }
         });
 
-        return res.status(200).json(filteredBooks);
+        res.status(200).json(filteredBooks);
 
     } catch (error) {
-        return res.status(500).json({ message: "Error retrieving books" });
+        res.status(500).json({ message: "Error retrieving books" });
     }
 });
 
 // Get all books based on title
 public_users.get('/title/:title', function (req, res) {
     const title = req.params.title.toLowerCase();
-    axios.get('http://localhost:5000/')
+    axios.get('http://localhost:5000/books')
         .then(response => {
-
-            const books = response.data;
+            const allBooks = response.data;
             let filteredBooks = {};
 
-            Object.keys(books).forEach(key => {
-                if (books[key].title.toLowerCase() === title.toLowerCase()) {
-                    filteredBooks[key] = books[key];
+            Object.keys(allBooks).forEach(key => {
+                if (allBooks[key].title.toLowerCase() === title) {
+                    filteredBooks[key] = allBooks[key];
                 }
             });
 
             res.status(200).json(filteredBooks);
         })
-        .catch(error => {
+        .catch(() => {
             res.status(500).json({ message: "Error retrieving books" });
         });
 });
